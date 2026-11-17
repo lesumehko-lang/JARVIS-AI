@@ -6,119 +6,222 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JARVIS AI</title>
 <style>
-* { box-sizing:border-box }
-body {
-  margin:0;
-  background:#050b16;
-  color:#d9f5ff;
-  font-family:Arial,sans-serif;
-  text-align:center;
+*{box-sizing:border-box}
+body{
+ margin:0;background:#050b16;color:#d9f5ff;
+ font-family:Arial,sans-serif;text-align:center;padding:15px
 }
-header {
-  padding:25px;
-  font-size:27px;
-  letter-spacing:5px;
-  color:#45d9ff;
+header{padding:20px;font-size:27px;letter-spacing:5px;color:#45d9ff}
+.circle{
+ width:150px;height:150px;margin:20px auto;
+ border:3px solid #32cfff;border-radius:50%;
+ box-shadow:0 0 25px #168cff,inset 0 0 30px #168cff;
+ display:flex;align-items:center;justify-content:center;font-size:55px
 }
-.circle {
-  width:190px;
-  height:190px;
-  margin:35px auto;
-  border:3px solid #32cfff;
-  border-radius:50%;
-  box-shadow:0 0 25px #168cff,inset 0 0 30px #168cff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:65px;
+.status{color:#58dfff;margin:15px}
+.panel{
+ max-width:650px;margin:15px auto;padding:15px;
+ background:#101c30;border:1px solid #168cff;border-radius:15px
 }
-.status { color:#58dfff;margin:20px }
-#chat {
-  max-width:600px;
-  margin:20px auto;
-  padding:15px;
-  min-height:130px;
-  text-align:left;
+select,input{
+ width:100%;padding:13px;margin:7px 0;border-radius:10px;
+ border:1px solid #168cff;background:#071323;color:white
 }
-input {
-  width:65%;
-  padding:14px;
-  border-radius:12px;
-  border:1px solid #168cff;
-  background:#101c30;
-  color:white;
+button{
+ padding:13px;margin:5px;border:0;border-radius:10px;
+ background:#087fc4;color:white;cursor:pointer
 }
-button {
-  padding:14px;
-  margin:5px;
-  border:0;
-  border-radius:12px;
-  background:#087fc4;
-  color:white;
-  cursor:pointer;
+button:hover{background:#159fe9}
+#chat{
+ max-width:650px;height:250px;overflow-y:auto;
+ margin:15px auto;padding:15px;text-align:left;
+ background:#071323;border:1px solid #168cff;border-radius:12px
 }
+.message{padding:10px;margin:8px 0;border-radius:10px;background:#10243b;white-space:pre-wrap;overflow-wrap:anywhere}
+.user{border-left:3px solid #45d9ff}
+.bot{border-left:3px solid #a77cff}
+.row{display:flex;gap:7px;max-width:650px;margin:auto}
+.row input{flex:1;min-width:0}
+.small{color:#8baabd;font-size:13px}
 </style>
 </head>
 <body>
+
 <header>J.A.R.V.I.S.</header>
 <div class="circle">◉</div>
 <div class="status" id="status">СИСТЕМА ГОТОВА</div>
-<div id="chat">Джарвис: Здравствуйте. Чем могу помочь?</div>
-<input id="message" placeholder="Введите сообщение...">
-<button onclick="send()">Отправить</button>
+
+<div class="panel">
+<h3>🎭 Выбери персонажа</h3>
+<select id="character">
+<option value="jarvis">🤖 JARVIS</option>
+<option value="rick">🧪 Рик Санчез</option>
+<option value="morty">😰 Морти</option>
+<option value="verity">✨ Верити</option>
+<option value="tony">🦾 Тони Старк</option>
+<option value="deadpool">😂 Дэдпул</option>
+<option value="shrek">🟢 Шрек</option>
+</select>
+
+<h3>🔊 Голос</h3>
+<select id="voice">
+<option value="">Автоматический голос</option>
+</select>
+<div class="small">Доступные голоса зависят от Windows и браузера.</div>
+
+<h3>⚙️ Скорость речи</h3>
+<input id="speed" type="range" min="0.7" max="1.5" step="0.1" value="1">
+<button onclick="testVoice()">▶ Проверить голос</button>
+</div>
+
+<div id="chat">
+<div class="message bot">JARVIS: Здравствуйте! Выберите персонажа и начните общение.</div>
+</div>
+
+<div class="row">
+<input id="message" placeholder="Напишите сообщение...">
+<button onclick="send()">➤</button>
+</div>
+
 <button onclick="listen()">🎤 Микрофон</button>
+<button onclick="speechSynthesis.cancel()">⏹ Остановить голос</button>
 
 <script>
-function speak(text) {
-  const speech = new SpeechSynthesisUtterance(text);
-  speech.lang = "ru-RU";
-  speechSynthesis.speak(speech);
+const characters = {
+ jarvis: {
+  name:"JARVIS",
+  style:"Ты JARVIS, вежливый и умный помощник. Говори спокойно, чётко и с лёгким юмором."
+ },
+ rick: {
+  name:"Рик Санчез",
+  style:"Ты вымышленный безумный учёный с саркастичным юмором, говоришь дерзко, остроумно и любишь научные шутки."
+ },
+ morty: {
+  name:"Морти",
+  style:"Ты эмоциональный, немного неуверенный и добрый подросток. Говори живо, иногда волнуйся, но оставайся дружелюбным."
+ },
+ verity: {
+  name:"Верити",
+  style:"Ты дружелюбный, любознательный и остроумный персонаж. Отвечай живо и с юмором."
+ },
+ tony: {
+  name:"Тони Старк",
+  style:"Ты уверенный изобретатель с быстрым умом, харизмой и остроумными замечаниями."
+ },
+ deadpool: {
+  name:"Дэдпул",
+  style:"Ты весёлый саркастичный герой, любишь шутки и неожиданные комментарии. Не используй грубость."
+ },
+ shrek: {
+  name:"Шрек",
+  style:"Ты добродушный, немного ворчливый огр. Говори просто, смешно и с юмором."
+ }
+};
+
+const chat = document.getElementById("chat");
+const statusEl = document.getElementById("status");
+const voiceSelect = document.getElementById("voice");
+
+function addMessage(name,text,type){
+ const div=document.createElement("div");
+ div.className="message "+type;
+ div.textContent=name+": "+text;
+ chat.appendChild(div);
+ chat.scrollTop=chat.scrollHeight;
 }
 
-function answer(text) {
-  const t = text.toLowerCase();
-  if (t.includes("привет")) return "Здравствуйте! Я Джарвис.";
-  if (t.includes("время")) return "Сейчас " +
-    new Date().toLocaleTimeString("ru-RU");
-  if (t.includes("дата")) return "Сегодня " +
-    new Date().toLocaleDateString("ru-RU");
-  if (t.includes("как дела")) return "Все системы работают штатно.";
-  return "Пока я работаю в демонстрационном режиме. Скоро подключим искусственный интеллект.";
+function loadVoices(){
+ const voices=speechSynthesis.getVoices();
+ const old=voiceSelect.value;
+ voiceSelect.innerHTML='<option value="">Автоматический голос</option>';
+ voices.forEach((voice,index)=>{
+  const option=document.createElement("option");
+  option.value=String(index);
+  option.textContent=voice.name+" ("+voice.lang+")";
+  voiceSelect.appendChild(option);
+ });
+ if([...voiceSelect.options].some(o=>o.value===old)){
+  voiceSelect.value=old;
+ }
+}
+speechSynthesis.onvoiceschanged=loadVoices;
+loadVoices();
+
+function speak(text){
+ speechSynthesis.cancel();
+ const speech=new SpeechSynthesisUtterance(text);
+ speech.lang="ru-RU";
+ speech.rate=Number(document.getElementById("speed").value);
+ const index=voiceSelect.value;
+ const voices=speechSynthesis.getVoices();
+ if(index!=="" && voices[Number(index)]){
+  speech.voice=voices[Number(index)];
+ }
+ speechSynthesis.speak(speech);
 }
 
-function send() {
-  const input = document.getElementById("message");
-  const text = input.value.trim();
-  if (!text) return;
-  const result = answer(text);
-  document.getElementById("chat").innerHTML =
-    "Вы: " + text + "<br><br>Джарвис: " + result;
-  input.value = "";
-  speak(result);
+function testVoice(){
+ const character=characters[document.getElementById("character").value];
+ speak("Привет! Я "+character.name+". Рад с тобой поговорить!");
 }
 
-function listen() {
-  const Recognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) {
-    alert("Распознавание речи недоступно в этом браузере.");
-    return;
-  }
-  const rec = new Recognition();
-  rec.lang = "ru-RU";
-  rec.onstart = () =>
-    document.getElementById("status").textContent = "СЛУШАЮ...";
-  rec.onresult = e => {
-    document.getElementById("message").value =
-      e.results[0][0].transcript;
-    send();
-  };
-  rec.onerror = () =>
-    document.getElementById("status").textContent = "ОШИБКА МИКРОФОНА";
-  rec.onend = () =>
-    document.getElementById("status").textContent = "СИСТЕМА ГОТОВА";
-  rec.start();
+async function send(){
+ const input=document.getElementById("message");
+ const text=input.value.trim();
+ if(!text)return;
+
+ const character=characters[document.getElementById("character").value];
+ addMessage("Ты",text,"user");
+ input.value="";
+ statusEl.textContent="ДУМАЮ...";
+
+ try{
+  const response=await fetch("/api/chat",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    message:"Инструкция по стилю персонажа: "+character.style+
+    "\nИмя персонажа: "+character.name+
+    "\nСообщение пользователя: "+text
+   })
+  });
+
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"Ошибка сервера");
+
+  const reply=data.reply||"Я не получил ответ.";
+  addMessage(character.name,reply,"bot");
+  speak(reply);
+  statusEl.textContent="СИСТЕМА ГОТОВА";
+ }catch(error){
+  addMessage("Ошибка",error.message,"bot");
+  statusEl.textContent="ОШИБКА СОЕДИНЕНИЯ";
+ }
 }
+
+function listen(){
+ const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Recognition){
+  alert("Распознавание речи недоступно. Попробуй Chrome.");
+  return;
+ }
+ const rec=new Recognition();
+ rec.lang="ru-RU";
+ rec.onstart=()=>statusEl.textContent="СЛУШАЮ...";
+ rec.onresult=e=>{
+  document.getElementById("message").value=e.results[0][0].transcript;
+  send();
+ };
+ rec.onerror=()=>statusEl.textContent="ОШИБКА МИКРОФОНА";
+ rec.onend=()=> {
+  if(statusEl.textContent==="СЛУШАЮ...")statusEl.textContent="СИСТЕМА ГОТОВА";
+ };
+ rec.start();
+}
+
+document.getElementById("message").addEventListener("keydown",e=>{
+ if(e.key==="Enter")send();
+});
 </script>
 </body>
 </html>
