@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS AI</title>
+<style>
+* { box-sizing:border-box }
+body {
+  margin:0;
+  background:#050b16;
+  color:#d9f5ff;
+  font-family:Arial,sans-serif;
+  text-align:center;
+}
+header {
+  padding:25px;
+  font-size:27px;
+  letter-spacing:5px;
+  color:#45d9ff;
+}
+.circle {
+  width:190px;
+  height:190px;
+  margin:35px auto;
+  border:3px solid #32cfff;
+  border-radius:50%;
+  box-shadow:0 0 25px #168cff,inset 0 0 30px #168cff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:65px;
+}
+.status { color:#58dfff;margin:20px }
+#chat {
+  max-width:600px;
+  margin:20px auto;
+  padding:15px;
+  min-height:130px;
+  text-align:left;
+}
+input {
+  width:65%;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #168cff;
+  background:#101c30;
+  color:white;
+}
+button {
+  padding:14px;
+  margin:5px;
+  border:0;
+  border-radius:12px;
+  background:#087fc4;
+  color:white;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+<header>J.A.R.V.I.S.</header>
+<div class="circle">◉</div>
+<div class="status" id="status">СИСТЕМА ГОТОВА</div>
+<div id="chat">Джарвис: Здравствуйте. Чем могу помочь?</div>
+<input id="message" placeholder="Введите сообщение...">
+<button onclick="send()">Отправить</button>
+<button onclick="listen()">🎤 Микрофон</button>
+
+<script>
+function speak(text) {
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.lang = "ru-RU";
+  speechSynthesis.speak(speech);
+}
+
+function answer(text) {
+  const t = text.toLowerCase();
+  if (t.includes("привет")) return "Здравствуйте! Я Джарвис.";
+  if (t.includes("время")) return "Сейчас " +
+    new Date().toLocaleTimeString("ru-RU");
+  if (t.includes("дата")) return "Сегодня " +
+    new Date().toLocaleDateString("ru-RU");
+  if (t.includes("как дела")) return "Все системы работают штатно.";
+  return "Пока я работаю в демонстрационном режиме. Скоро подключим искусственный интеллект.";
+}
+
+function send() {
+  const input = document.getElementById("message");
+  const text = input.value.trim();
+  if (!text) return;
+  const result = answer(text);
+  document.getElementById("chat").innerHTML =
+    "Вы: " + text + "<br><br>Джарвис: " + result;
+  input.value = "";
+  speak(result);
+}
+
+function listen() {
+  const Recognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition) {
+    alert("Распознавание речи недоступно в этом браузере.");
+    return;
+  }
+  const rec = new Recognition();
+  rec.lang = "ru-RU";
+  rec.onstart = () =>
+    document.getElementById("status").textContent = "СЛУШАЮ...";
+  rec.onresult = e => {
+    document.getElementById("message").value =
+      e.results[0][0].transcript;
+    send();
+  };
+  rec.onerror = () =>
+    document.getElementById("status").textContent = "ОШИБКА МИКРОФОНА";
+  rec.onend = () =>
+    document.getElementById("status").textContent = "СИСТЕМА ГОТОВА";
+  rec.start();
+}
+</script>
+</body>
+</html>
