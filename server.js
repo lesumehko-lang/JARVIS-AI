@@ -1,60 +1,58 @@
 
 import express from "express";
-import { GoogleGenAI } from "@google/genai";
 import path from "path";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: "20kb" }));
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "index.html"));
-});
+app.use(express.json());
+app.use(express.static(process.cwd()));
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return res.status(503).json({
-        error: "ИИ пока не настроен"
-      });
-    }
-
     const message = req.body.message;
 
-    if (typeof message !== "string" ||
-        !message.trim() ||
-        message.length > 4000) {
-      return res.status(400).json({
-        error: "Проверь сообщение"
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "Напиши сообщение" });
+    }
+
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content: "Ты JARVIS — умный, вежливый голосовой помощник. Отвечай на русском языке."
+            },
+            { role: "user", content: message }
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(500).json({
+        error: data.error?.message || "Ошибка Groq API"
       });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: message,
-      config: {
-        systemInstruction:
-          "Ты JARVIS, русскоязычный вежливый ИИ-помощник. Отвечай понятно и кратко."
-      }
-    });
-
     res.json({
-      reply: response.text || "Не удалось получить ответ."
+      reply: data.choices[0].message.content
     });
-
   } catch (error) {
-    console.error("JARVIS error:", error.message);
-    res.status(500).json({
-      error: "Ошибка ИИ. Попробуй ещё раз."
-    });
+    res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("JARVIS запущен на порту " + PORT);
+  console.log(`JARVIS запущен на порту ${PORT}`);
 });
